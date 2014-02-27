@@ -1,0 +1,70 @@
+{{extend 'layout.html'}}
+
+<h3>Select Rule Set</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<input id='search' type="text" class="input search-query span2" placeholder='Search/Filter' style='height:16px;'/>
+<a class="btn btn-primary" href="#" id="btn-next">{{=T('Next')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="ruleset_table">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Descrition')),
+            TH(T('Rules')),
+         ))}}
+{{for r in rulesets:}}
+    <tr>
+        <td><input class="sel" value="{{=r.id}}" type='checkbox'></td>
+        <td>{{=r.name}}</td>
+        <td>{{=r.description}}</td>
+        <td>{{for p in r.rules:
+            =XML('<div class="label label-info">%s</div> '% rule_dict[p])
+        pass}}</td>
+    </tr>
+{{pass}}
+</table>
+
+<script type="text/javascript">
+    $('#ruleset_table .toggle-all').on('change', function (e) {
+      e.preventDefault();
+      $("#ruleset_table .sel").prop('checked', $(this).is(':checked'));
+    });
+
+    $("#btn-next").on('click', function(){
+        var selected = [];
+        $.each($('#ruleset_table tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        location.href = "select_rule?ruleset="+selected.join(',');
+    });
+
+    $(document).ready(function(){
+
+        var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+        if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+            $.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+                return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+            };
+        } else { // build the pseudo selector for jQuery >= 1.8
+            $.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+                return function(el) {
+                    return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+                };
+            });
+        }
+
+        $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+            var q = $(this).val();
+            var tbody=$('tbody'); // cache the tbody element
+            if (q==='') { // if the filtering query is blank
+                tbody.find('tr').show().addClass('visible'); // show all rows
+                tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+            } else { // if the filter query is not blank
+                tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+                tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+            }
+        });
+    });
+
+</script>

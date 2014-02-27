@@ -1,0 +1,199 @@
+{{extend 'layout.html'}}
+<style type="text/css">
+    .label-tip{
+        cursor: pointer;
+    }
+</style>
+
+<h3>Application Conversation Mapping</h3>
+
+<div class="pull-right">
+<input id='search' type="text" class="input search-query span2" placeholder='Search/Filter' style='height:12px;'/>
+<a class="btn btn-mini btn-success" id="btn-new">{{=I('',_class='icon-plus')}} {{=T('New')}}</a>
+<a class="btn btn-mini btn-danger" id="btn-del">{{=I('',_class='icon-trash')}} {{=T('Delete')}}</a>
+</div>
+
+<ul class="nav nav-tabs" style="margin-bottom:10px;">
+	<li class="active"><a href="#appview" data-toggle="tab">{{=T('Application')}}</a></li>
+	<li><a href="#pairview" data-toggle="tab">{{=T('Conversation')}}</a></li>
+</ul>
+
+<div id="routetabs" class="tab-content">
+<div class="tab-pane active" id="appview">
+<table class="table table-bordered table-condensed table-hover" id="app_table">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Description')),
+            TH(T('Known Conversation')),
+         ))}}
+<tbody id="app_tbody"></tbody>
+</table>
+</div>
+
+<div class="tab-pane" id="pairview">
+<table class="table table-bordered table-condensed table-hover" id="pair_table">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Source IP')),
+            TH(T('Destination IP')),
+            TH(T('Procotol')),
+            TH(T('Source Port')),
+            TH(T('Destination Port')),
+            TH(T('Span Ports')),
+            TH(T('Description')),
+            TH(T('Mapped Applications')),
+         ))}}
+<tbody id="pair_tbody"></tbody>
+</table>
+</div>
+</div>
+
+ 
+<!-- Modal -->
+<div id="myModal" class="modal hide">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h4 id="myModalLabel">Information</h4>
+  </div>
+  <div id="modal-body" class="modal-body">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+  </div>
+</div>
+
+<script type="text/javascript">
+function showAppModel(appname,i){
+    $('#myModalLabel').html(appname);
+    ajax('app/'+i,null,'modal-body');
+    $('#myModal').modal();
+}
+
+function showPairModel(pairname,i){
+    $('#myModalLabel').html(pairname);
+    ajax('pair/'+i,null,'modal-body');
+    $('#myModal').modal();
+}
+
+$.getJSON( "app_pair_data.json", function( json ) {
+    var apps = json.apps;
+    var pairs = json.pairs;
+    var protocols = json.protocols;
+    var ports = json.ports;
+    var span_ports = json.span_ports;
+    var items=[];
+
+    $.each(pairs, function(i, d) {
+        var app_names = [], s_ports = [];
+        $.each(d.apps, function(j, a){
+            var app_name = "<div class='label label-info label-tip' onClick=showAppModel('" + apps[a-1].name + "','"
+                           + a + "') data-toggle='tooltip' title='"
+                           + (apps[a-1].description || 'No description') + "'>"
+                           + apps[a-1].name + "</div> ";
+            app_names.push(app_name)
+        });
+        app_names = app_names.join("");
+        $.each(d.span_ports, function(j, a){
+            var p = span_ports[a-1];
+            var s_port = "<div class='label label-info' data-toggle='tooltip' title='" +
+                           (p.description || 'No description') + "'>" + p.name + "</div> ";
+            s_ports.push(s_port)
+        });
+        s_ports = s_ports.join("");
+        var proto = protocols[d.protocol] || d.protocol;
+        var src_port = ports[d.src_port] || d.src_port || '';
+        var dst_port = ports[d.dst_port] || d.dst_port || '';
+        var description = d.description || 'No description';
+        items.push( "<tr><td><input value=" + d.id + " type='checkbox' class='sel'></td><td><a href='edit_record/pair/"
+                    + d.id + "' target='_blank'>"+ d.name +"</a></td><td>"
+                    + d.src_ip + "</td><td>" + d.dst_ip + "</td><td>" + proto + "</td><td>"
+                    + src_port + "</td><td>" + dst_port + "</td><td>" + s_ports + "</td><td>"
+                    + description + "</td><td>" + app_names + "</td></tr>" );
+    });
+    $("#pair_tbody").append( items.join( "" ));
+
+    items = []
+    $.each(apps, function(i, d) {
+        var pair_list = []
+        $.each(pairs, function(j, p){
+            $.each(p.apps, function(k, a){
+                if(d.id==a) {
+                    var p_name = "<div class='label label-info label-tip' onClick=showPairModel('" + p.name + "','" +
+                            + p.id + "') data-toggle='tooltip' data-original-title='" +
+                           (p.description || 'No description') + "'>" + p.name + "</div> ";
+                    pair_list.push(p_name);               
+                }
+            });
+        });
+        pair_list = pair_list.join("")
+        items.push( "<tr><td><input value="+d.id + " type='checkbox' class='sel'></td><td><a href='edit_record/app/"
+                    + d.id + "' target='_blank'>"+ d.name +"</a></td><td>"
+                    + (d.description || 'No description' ) + "</td><td>" + pair_list + "</td></tr>" );
+    });
+    $("#app_tbody").append( items.join( "" ));
+
+
+    $("#app_table .toggle-all").on('change', function (e) {
+        e.preventDefault();
+        $('#app_table .sel').prop('checked', $(this).is(':checked'));
+    });
+
+    $('#pair_table .toggle-all').on('change', function (e) {
+        e.preventDefault();
+        $("#pair_table .sel").prop('checked', $(this).is(':checked'));
+    });
+
+    function getActiveTab(){
+        if($('#appview').prop('class') == 'tab-pane active')
+            return 'app'
+        return 'pair'
+    }
+    
+    function getSelectList(){
+        var selected = [];
+        $.each($('#'+getActiveTab()+'view tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        return selected;
+    }
+
+    $("#btn-new").on('click', function(){
+        window.open('new_record/'+getActiveTab());
+    });
+
+    $("#btn-del").on('click', function(){
+        selected = getSelectList();
+        alert( "TODO:\nDelete "+getActiveTab()+" items for " + selected.join(','));
+    });
+
+    $(document).ready(function(){
+        $('table').tooltip({ selector: "[data-toggle=tooltip]"});
+
+	var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+	if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+		$.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+			return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+		};
+	} else { // build the pseudo selector for jQuery >= 1.8
+		$.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+			return function(el) {
+				return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+			};
+		});
+	}
+
+        $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+            var q = $(this).val();
+            var tbody=$('tbody'); // cache the tbody element
+            if (q==='') { // if the filtering query is blank
+                tbody.find('tr').show().addClass('visible'); // show all rows
+                tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+            } else { // if the filter query is not blank
+                tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+                tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+            }
+        });
+    });
+});    
+
+</script>

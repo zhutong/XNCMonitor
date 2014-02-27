@@ -1,0 +1,197 @@
+{{extend 'layout.html'}}
+
+<div class="pull-right">
+<a class="btn btn-mini btn-link" href="http://127.0.0.1:8080">XNC_Controller</a>
+<a class="btn btn-mini btn-link" href="http://127.0.0.1:8080/monitor">XNC_Monitor_Manager</a>
+</div>
+
+<h3>XNC Monitor Configuration</h3>
+
+<div class="pull-right">
+<input id='search' type="text" class="input search-query span2" placeholder='Search/Filter' style='height:12px;' />
+<a class="btn btn-mini btn-primary" id="refresh">{{=I(_class='icon-refresh')}} {{=T('Refresh')}}</a>
+</div>
+<ul class="nav nav-tabs" style="margin-bottom:10px;">
+	<li class="active"><a href="#ruleview" data-toggle="tab">Filters & Rules</a></li>
+	<li><a href="#deviceview" data-toggle="tab">Switches & Devices</a></li>
+</ul>
+
+<div id="routetabs" class="tab-content">
+<div class="tab-pane fade active in" id="ruleview">
+<a class="btn btn-mini btn-danger pull-right" href="#" id="btn-del-filter">{{=I(_class='icon-trash')}} {{=T('Delete Filters')}}</a>
+<h4>Filters</h4>
+<table class="table table-bordered table-condensed table-hover" id="filtertable">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Src MAC')),
+            TH(T('Dst MAC')),
+            TH(T('Ether Type')),
+            TH(T('Src IP')),
+            TH(T('Dst IP')),
+            TH(T('Proto.')),
+            TH(T('Src L4 Port#')),
+            TH(T('Dst L4 Port#')),
+            TH(T('Vlan ID')),
+         ))}}
+{{for filter in AllFilters['filter']:}}
+    <tr>
+        <td><input class="sel" value="{{=filter['name']}}" type='checkbox'></td>
+        <td>{{=filter['name']}}</td>
+        <td>{{=filter['datalayerSrc']}}</td>
+        <td>{{=filter['datalayerDst']}}</td>
+        <td>{{=filter['etherType']}}</td>
+        <td>{{=filter['networkSrc']}}</td>
+        <td>{{=filter['networkDst']}}</td>
+        <td>{{=filter['protocol']}}</td>
+        <td>{{=filter['transportPortSrc']}}</td>
+        <td>{{=filter['transportPortDst']}}</td>
+        <td>{{=filter['vlanId']}}</td>
+    </tr>
+{{pass}}
+</table>
+
+<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">Error</h3>
+  </div>
+  <div class="modal-body" class='error'></div>
+  <div class="modal-footer">
+    <button id='submit' class="btn btn-primary">{{=T('OK')}}</button>
+  </div>
+</div>
+
+<a class="btn btn-mini btn-danger pull-right" href="#" id="btn-del-rule">{{=I(_class='icon-trash')}} {{=T('Delete Rules')}}</a>
+<h4>Rules</h4>
+<table class="table table-bordered table-condensed table-hover" id="ruletable">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Filter')),
+            TH(T('Source Port')),
+            TH(T('Device')),
+         ))}}
+{{for rule in AllRules['rule']:}}
+    <tr>
+        <td><input class="sel" value="{{=rule['name']}}" type='checkbox'></td>
+        <td>{{=rule['name']}}</td>
+        <td>{{=rule['filter']}}</td>
+        <td>{{if rule.has_key('sourcePort'):}} {{=rule['sourcePort']}} {{else:}} {{pass}}</td>
+        <td>{{for device in rule['device']:}} {{=device}} {{pass}}</td>
+    </tr>
+{{pass}}
+</table>
+</div>
+
+<div class="tab-pane fade in" id="deviceview">
+<h4>Switches</h4>
+<table class="table table-bordered table-condensed table-hover">
+{{=THEAD(TR(TH(T('Name')),
+            TH(T('Node ID')),
+            TH(T('Description')),
+         ))}}
+{{for node in AllNodes['nodeProperties']:}}
+    <tr>
+        <td>{{=node['properties']['description']['value']}}</td>
+        <td>{{=node['node']['id']}}</td>
+        <td></td>
+    </tr>
+{{pass}}
+</table>
+
+<h4>Monitor Ports</h4>
+<table class="table table-bordered table-condensed table-hover">
+{{=THEAD(TR(TH('Type'),
+            TH(T('PortId@SwitchID')),
+            TH(T('Vlan Tag')),
+            TH(T('Description')),
+         ))}}
+{{for port in AllPorts['portConfig']:}}
+    <tr>
+        <td>{{=port['monitorPortType']}}</td>
+        <td>{{=port['nodeConnector']}}</td>
+        <td>{{=port['vlanTag']}}</td>
+        <td></td>
+    <tr>
+{{pass}}
+</table>
+
+<h4>Devices</h4>
+<table class="table table-bordered table-condensed table-hover">
+{{=THEAD(TR(TH(T('Name')),
+            TH(T('Connect to')),
+            TH(T('Description')),
+         ))}}
+{{for device in AllDevices['device']:}}
+    <tr>
+        <td>{{=device['name']}}
+        <td>{{=device['nodeConnector']}}
+        <td></td>
+    </tr>
+{{pass}}
+</table>    
+</div>
+
+<script type="text/javascript">
+    var filterSelected = $("#filtertable .sel");
+    filtertoggle = $('#filtertable .toggle-all');
+    filtertoggle.on('change', function (e) {
+      e.preventDefault();
+      filterSelected.prop('checked', filtertoggle.is(':checked'));
+    });
+
+    var ruleSelected = $("#ruletable .sel");
+    ruletoggle = $('#ruletable .toggle-all');
+    ruletoggle.on('change', function (e) {
+      e.preventDefault();
+      ruleSelected.prop('checked', ruletoggle.is(':checked'));
+    });
+
+    $("#btn-del-filter").on('click', function (){
+        var selected = [];
+        $.each($('#filtertable tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        alert( "TODO://Delete filters for:\n\n" + selected.join('\n'));
+    });
+
+    $("#btn-del-rule").on('click', function (){
+        var selected = [];
+        $.each($('#ruletable tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        alert( "TODO://Delete rules for:\n\n" + selected.join(' '));
+    });
+
+	var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+	if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+		$.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+			return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+		};
+	} else { // build the pseudo selector for jQuery >= 1.8
+		$.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+			return function(el) {
+				return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+			};
+		});
+	}
+
+    $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+        var q = $(this).val();
+        var tbody=$('tbody'); // cache the tbody element
+        if (q==='') { // if the filtering query is blank
+            tbody.find('tr').show().addClass('visible'); // show all rows
+            tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+        } else { // if the filter query is not blank
+            tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+            tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+        }
+    });
+
+    $('#refresh').bind('click', function() {
+        $.get("xnc_refresh", function(result){
+            alert(result);
+            if(result=='Refresh successfully.') window.location='xnc_config';
+        });
+    });
+
+</script>

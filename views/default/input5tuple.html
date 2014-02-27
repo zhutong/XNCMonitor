@@ -1,0 +1,43 @@
+{{extend 'layout.html'}}
+
+<h3>{{=T('Input 5 Tuples')}}</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<a class="btn btn-success" id="btn-add" onClick=addNewLine()>{{=I('',_class='icon-plus')}} {{=T('Add')}}</a>
+<a class="btn btn-primary" id="btn-next" onClick=goNext()>{{=T('Next')}}</a>
+</div>
+<table class="table table-bordered table-condensed table-hover" id="5tuple_table">
+{{=THEAD(TR(TH('#'),
+            TH(T('Source IP Address')),
+            TH(T('Source Port #')),
+            TH(T('Protocol')),
+            TH(T('Destination IP Address')),
+            TH(T('Destination Port #')),
+         ))}}
+<tbody id="policy_tbody"></tbody>
+</table>
+
+<script type="text/javascript">
+var i = 1;
+function addNewLine(){
+    if(i==9) return false;
+    $('tbody').append('<tr><td>'+i+'</td>'
+                    + '<td style="padding:0px;"><input class="input-block-level text-center" style="border:0px;"/></td>'
+                    + '<td style="padding:0px;"><input class="input-block-level text-center" style="border:0px;"/></td>'
+                    + '<td style="padding:0px;"><input class="input-block-level text-center" value="6" style="border:0px;"/></td>'
+                    + '<td style="padding:0px;"><input class="input-block-level text-center" style="border:0px;"/></td>'
+                    + '<td style="padding:0px;"><input class="input-block-level text-center" style="border:0px;"/></td></tr>');
+    i += 1;
+}
+addNewLine(i);
+
+function goNext(){
+    var info = []
+    $('#policy_tbody input').each(function(i, s){
+        info.push(s.value);
+    });
+    location.href = "create_policy_5tuple?para="+info.join('_');
+}
+</script>
+
+

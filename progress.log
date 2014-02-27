@@ -1,0 +1,4 @@
+[2014-01-03 20:42:37] START
+[2014-01-03 20:57:42] CREATE monitor.py: 0
+[2014-01-03 20:59:17] EDIT XNCMonitor/controllers/monitor.py: 0
+[2014-01-03 21:10:51] DELETE XNCMonitor/controllers/monitor.py: -11

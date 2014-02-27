@@ -1,0 +1,68 @@
+{{extend 'layout.html'}}
+
+<h3>{{=T('Review Policy')}}</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<!--a class="btn btn-primary" id="btn-save" onClick=showSaveModel()>{{=T('Save Policy')}}</a-->
+<a class="btn btn-success" id="btn-apply" onClick=showInstallModel()>{{=I(_class='icon-cloud-download')}} {{=T('Install Policy')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="app_table">
+{{=THEAD(TR(TH('#'),
+            TH(T('Rule')),
+            TH(T('Filter')),
+            TH(T('Source Port')),
+            TH(T('Device')),
+         ))}}
+<tbody id="app_tbody">
+{{for i, r in enumerate(rules):}}
+<tr>
+    <td>{{=i+1}}</td>
+    <td>{{=r['name']}}</td>
+    <td>{{=r['filter']}}</td>
+    <td>{{if 'sourcePort' in r:
+        =r['sourcePort']
+    pass}}</td>
+    <td>{{for p in r['device']:
+        =XML('<div class="label label-info">%s</div> '% p)
+    pass}}</td>
+</tr>
+{{pass}}
+</tbody>
+</table>
+
+<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel"></h3>
+  </div>
+  <div class="modal-body">
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">{{=T('Cancel')}}</button>
+    <button id='submit' class="btn btn-primary"></button>
+  </div>
+</div>
+
+<script type="text/javascript">
+$('#submit').on('click', function(){
+    if ($('#submit').html() =="{{=T('Save')}}")
+        ajax('save_policy?name='+$('#ruleset').val(), null, null);
+    else
+        ajax('install_policy', null, null);
+    $('#myModal').modal('hide')
+});
+function showSaveModel(){
+    $('#myModalLabel').html("{{=T('Save Policy')}}");
+    $('#submit').html("{{=T('Save')}}");
+    $('.modal-body').html("{{=T('Save filters and rules to database.')}}<div><input id='ruleset' type='text' placeholder='Please input ruleset name'></div>");
+    $('#myModal').modal();
+}
+
+function showInstallModel(){
+    $('#myModalLabel').html("{{=T('Install Policy')}}");
+    $('#submit').html("{{=T('Install')}}");
+    $('.modal-body').html('<div class="alert">Install filters and rules to XNC Monitor Manager.<br><strong>Warning!</strong> All current policies will be cleared!</div>');
+    $('#myModal').modal();
+}
+</script>

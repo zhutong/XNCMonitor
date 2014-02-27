@@ -1,0 +1,77 @@
+{{extend 'layout.html'}}
+
+<h3>Select Application</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<input id='search' type="search" class="input search-query span2" placeholder='Search/Filter' style='height:16px;'/>
+<a class="btn btn-primary" href="#" id="btn-next">{{=T('Next')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="app_table">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Description')),
+         ))}}
+<tbody id="app_tbody"></tbody>
+</table>
+
+<script type="text/javascript">
+$.getJSON( "app_pair_data.json", function( json ) {
+    var apps = json.apps;
+    var items=[];
+
+    $.each(apps, function(i, d) {
+        var pair_list = []
+        items.push( "<tr><td><input value="+d.id + " type='checkbox' class='sel'></td><td>"+ d.name +"</td><td>"
+                    + (d.description || 'No description' ) + "</td></tr>" );
+    });
+    $("#app_tbody").append( items.join( "" ));
+
+
+    $('#app_table .toggle-all').on('change', function (e) {
+        e.preventDefault();
+        $("#app_table .sel").prop('checked', $(this).is(':checked'));
+    });
+
+    $("#btn-next").on('click', function(){
+        var selected = [];
+        $.each($('#app_table tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        if(selected.length==0)
+            alert("Please select at least one application.");
+        else
+            location.href = "select_pair?app="+selected.join(',');
+    });
+
+    $(document).ready(function(){
+        $('table').tooltip({ selector: "a[data-toggle=tooltip]"});
+
+        var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+        if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+            $.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+                return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+            };
+        } else { // build the pseudo selector for jQuery >= 1.8
+            $.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+                return function(el) {
+                    return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+                };
+            });
+        }
+
+        $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+            var q = $(this).val();
+            var tbody=$('tbody'); // cache the tbody element
+            if (q==='') { // if the filtering query is blank
+                tbody.find('tr').show().addClass('visible'); // show all rows
+                tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+            } else { // if the filter query is not blank
+                tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+                tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+            }
+        });
+    });
+});    
+
+</script>

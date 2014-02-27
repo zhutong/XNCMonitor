@@ -1,0 +1,93 @@
+{{extend 'layout.html'}}
+
+<h3>Select Rule</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<input id='search' type="text" class="input search-query span2" placeholder='Search/Filter' style='height:16px;'/>
+<a class="btn btn-success" id="btn-apply" onClick=showInstallModel()>{{=I(_class='icon-cloud-download')}} {{=T('Install Rule')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="rule_table">
+{{=THEAD(TR(TH(XML('<input class="toggle-all" type="checkbox">'),_width="10"),
+            TH(T('Name')),
+            TH(T('Filter')),
+            TH(T('Source Port')),
+            TH(T('Device')),
+            TH(T('Descrition')),
+         ))}}
+{{for r in rules:}}
+    <tr>
+        <td><input class="sel" value="{{=r.id}}" type='checkbox'></td>
+        <td>{{=r.name}}</td>
+        <td>{{=r.monitor_filter}}</td>
+        <td>{{=r.sourcePort}}</td>
+        <td>{{for p in r.device.split(','):
+            =XML('<div class="label label-info">%s</div> '% p)
+        pass}}</td>
+        <td>{{=r.description}}</td>
+    </tr>
+{{pass}}
+</table>
+
+<div id="myModal" class="modal hide fade">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">{{=T('Install Policy')}}</h3>
+  </div>
+  <div class="modal-body">
+    <div class="alert">Install filters and rules to XNC Monitor Manager.<br><strong>Warning!</strong> All current policies will be cleared!</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">{{=T('Cancel')}}</button>
+    <button id='submit' class="btn btn-primary">{{=T('Install')}}</button>
+  </div>
+</div>
+
+<script type="text/javascript">
+    var selected = [];
+    $('#submit').on('click', function(){
+        var data = {'rules':selected};
+        $.post("install_rules", {data:JSON.stringify(data)}, function(data) {});
+        $('#myModal').modal('hide')
+    });
+    function showInstallModel(){
+        selected = [];
+        $.each($('#rule_table tr[style!="display: none;"] .sel:checked'), function(i, s){
+            selected.push(s.value);
+        });
+        if(selected.length) $('#myModal').modal();
+        else alert('Select at least one rule!');
+    }
+    $('#rule_table .toggle-all').on('change', function (e) {
+        e.preventDefault();
+        $("#rule_table .sel").prop('checked', $(this).is(':checked'));
+    });
+
+    $(document).ready(function(){
+        var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+        if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+            $.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+                return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+            };
+        } else { // build the pseudo selector for jQuery >= 1.8
+            $.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+                return function(el) {
+                    return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+                };
+            });
+        }
+
+        $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+            var q = $(this).val();
+            var tbody=$('tbody'); // cache the tbody element
+            if (q==='') { // if the filtering query is blank
+                tbody.find('tr').show().addClass('visible'); // show all rows
+                tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+            } else { // if the filter query is not blank
+                tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+                tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+            }
+        });
+    });
+
+</script>

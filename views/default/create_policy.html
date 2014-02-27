@@ -1,0 +1,105 @@
+{{extend 'layout.html'}}
+
+{{block head}}
+<style type="text/css">
+    .selectable{
+        cursor: pointer;
+    }
+</style>
+{{end}}
+<h3>{{=T('Create Policy')}}</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<input id='search' type="search" class="input search-query span2" placeholder='Search/Filter' style='height:16px;'/>
+<a class="btn btn-primary" id="btn-next">{{=T('Next')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="pair_table">
+{{=THEAD(TR(TH(T('Conversation')),
+            TH(T('Information')),
+            TH(XML('<input class="toggle-bidi" type="checkbox" checked /> '), T('Bidirection')),
+            TH(T('Span Port')),
+            TH(T('Monitor Device')),
+         ))}}
+<tbody id="pair_tbody">
+{{
+for i, p in enumerate(pairs):
+}}
+    <tr>
+        <td>{{=p.name}}</td>
+        <td>{{='%s:%s -> %s:%s, %s' %(p.src_ip or '*', p.src_port or '*', p.dst_ip or '*', p.dst_port or '*', p.protocol)}}</td>
+        <td><input value='{{=p.id}}' type='checkbox' class='sel-bidi' checked /></td>
+        <td id="spanport">{{for port in pairs_ports[i].split(', '):
+            =XML('<span id="%d/%s" class="label label-success selectable">%s</span> '%(p.id,port,port))
+        pass}}</td>
+        <td id="device">{{for d in devices:
+            =XML('<span id="%d/%s" class="label label-success selectable">%s</span> '%(p.id, d.name,d.name))
+        pass}}</td>
+    </tr>
+{{pass}}
+</tbody>
+</table>
+<script type="text/javascript">
+    $("#pair_table .selectable").on('click', function (e) {
+        e.preventDefault();
+        if($(this).attr('class')=='label label-success selectable')
+            $(this).prop('class','label selectable');
+        else
+            $(this).prop('class','label label-success selectable');      
+    });
+
+    $('#pair_table .toggle-bidi').on('change', function (e) {
+        e.preventDefault();
+        $("#pair_table .sel-bidi").prop('checked', $(this).is(':checked'));
+    });
+
+    var direction, port, device;
+    $("#btn-next").on('click', function(){
+        direction = [], port=[], device = [];
+        $.each($('#pair_table tr[style!="display: none;"] .sel-bidi'), function(i, s){
+            direction.push(s.value+'/'+$(this).is(':checked'));
+        });
+        $('#pair_table tr[style!="display: none;"] #spanport .label-success').each(function(i, s){
+            port.push(s.id);
+        });
+        $.each($('#pair_table tr[style!="display: none;"] #device .label-success'), function(i, s){
+            device.push(s.id);
+        });
+        if(direction.length==0)
+            alert("Please select at least one conversion.");
+        else {
+            var data = {'direction':direction, 'port':port, 'device':device};
+            $.post("submit_policy.json", {data:JSON.stringify(data)}, function(data) {
+                location.href = "review_policy";
+            });             
+        }    
+    });
+
+    $(document).ready(function(){
+        var jversion = $.fn.jquery.split('.'), jmajor = parseFloat(jversion[0]), jminor = parseFloat(jversion[1]);
+        if (jmajor<2 && jminor<8) { // build the pseudo selector for jQuery < 1.8
+            $.expr[':'].filterTableFind = function(a, i, m) { // build the case insensitive filtering functionality as a pseudo-selector expression
+                return $(a).text().toUpperCase().indexOf(m[3].toUpperCase())>=0;
+            };
+        } else { // build the pseudo selector for jQuery >= 1.8
+            $.expr[':'].filterTableFind = jQuery.expr.createPseudo(function(arg) {
+                return function(el) {
+                    return $(el).text().toUpperCase().indexOf(arg.toUpperCase())>=0;
+                };
+            });
+        }
+
+        $('#search').bind('keyup', function() { // bind doFiltering() to keyup
+            var q = $(this).val();
+            var tbody=$('tbody'); // cache the tbody element
+            if (q==='') { // if the filtering query is blank
+                tbody.find('tr').show().addClass('visible'); // show all rows
+                tbody.find('td').removeClass('highlight'); // remove the row highlight from all cells
+            } else { // if the filter query is not blank
+                tbody.find('tr').hide().removeClass('visible'); // hide all rows, assuming none were found
+                tbody.find('td').removeClass('highlight').filter(':filterTableFind("'+q.replace(/(['"])/g,'\\$1')+'")').addClass('highlight').closest('tr').show().addClass('visible');
+            }
+        });
+    });
+
+</script>

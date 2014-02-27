@@ -1,0 +1,22 @@
+{{extend 'layout.html'}}
+
+<h3>{{=T('XNC Parameter')}}</h3>
+
+{{=form}}
+
+{{if errorinfo:}}
+<div class="alert alert-block alert-error fade in">
+  <button type="button" class="close" data-dismiss="alert">X</button>
+  <strong>{{=T('Error!')}}</strong>
+  <p>{{=errorinfo}}</p>
+</div>
+{{elif verify:}}
+<div class="alert alert-success">
+  <button type="button" class="close" data-dismiss="alert">X</button>
+  <strong>{{=T('Success!')}}</strong>
+  <p>{{=T('Login successe.')}}</p>
+</div>
+{{pass}}
+
+
+

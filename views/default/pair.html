@@ -1,0 +1,9 @@
+{{=p.description}}<p>
+<h5 class="text-info">{{=T('Detail Info:')}}</h5>
+Src IP:<span class='label label-success'>{{=p['src_ip'] or '*'}}</span>
+Dst IP:<span class='label label-success'>{{=p['dst_ip'] or '*'}}</span>
+Protocol:<span class='label label-success'>{{=p['protocol'] or '*'}}</span>
+Src Port:<span class='label label-success'>{{=p['src_port'] or '*'}}</span>
+Dst Port:<span class='label label-success'>{{=p['dst_port'] or '*'}}</span>
+<h5 class="text-info">{{=T('Mapped Applications:')}}</h5>
+{{for a in apps:}}<span class='label label-success'>{{=a}}</span> {{pass}}

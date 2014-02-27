@@ -1,0 +1,72 @@
+{{extend 'layout.html'}}
+
+<style type="text/css">
+    .selectable{
+        cursor: pointer;
+    }
+</style>
+
+<h3>{{=T('Create Policy')}}</h3>
+
+<div class="pull-right" style="margin-bottom:10px;">
+<a class="btn btn-primary" id="btn-next">{{=T('Next')}}</a>
+</div>
+
+<table class="table table-bordered table-condensed table-hover" id="pair_table">
+{{=THEAD(TR(TH('#'),
+            TH(T('5-Tuple Information')),
+            TH(XML('<input class="toggle-bidi" type="checkbox" checked> '), T('Bidirection')),
+            TH(T('Span Port')),
+            TH(T('Monitor Device')),
+         ))}}
+<tbody id="pair_tbody">
+{{
+for pair in pairs:
+i = pair[0]
+}}
+    <tr>
+        <td>{{=i}}</td>
+        <td>{{=pair[1]}}</td>
+        <td><input value='{{=i}}' type='checkbox' class='sel-bidi' checked></td>
+        <td id="spanport">{{for p in ports:
+            =XML('<span id="%s/%s" class="label label-success selectable">%s</span> '%(i, p.name, p.name))
+        pass}}</td>
+        <td id="device">{{for d in devices:
+            =XML('<span id="%s/%s" class="label label-success selectable">%s</span> '%(i, d.name, d.name))
+        pass}}</td>
+    </tr>
+{{pass}}
+</tbody>
+</table>
+
+<script type="text/javascript">
+    $("#pair_table .selectable").on('click', function (e) {
+        e.preventDefault();
+        if($(this).attr('class')=='label label-success selectable')
+            $(this).prop('class','label selectable');
+        else
+            $(this).prop('class','label label-success selectable');      
+    });
+
+    $('#pair_table .toggle-bidi').on('change', function (e) {
+        e.preventDefault();
+        $("#pair_table .sel-bidi").prop('checked', $(this).is(':checked'));
+    });
+
+    $("#btn-next").on('click', function(){
+        var direction = [], port=[], device = [];
+        $.each($('#pair_table .sel-bidi'), function(i, s){
+            direction.push(s.value+'/'+$(this).is(':checked'));
+        });
+        $('#pair_table #spanport .label-success').each(function(i, s){
+            port.push(s.id);
+        });
+        $('#pair_table #device .label-success').each(function(i, s){
+            device.push(s.id);
+        });
+        var data = {'direction':direction, 'port':port, 'device':device};
+        $.post("review_policy_5tuple.json", {data:JSON.stringify(data)}, function(data) {
+            location.href = "review_policy_5tuple";
+        });             
+    });
+</script>
